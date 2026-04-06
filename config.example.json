@@ -1,0 +1,20 @@
+{
+    "excel_path": "professors.xlsx",
+    "resume_path": "resume.pdf",
+
+    "email_provider": "gmail",
+    "sender_email": "your@gmail.com",
+    "sender_app_password": "your-16-char-app-password",
+
+    "subject": "Inquiry Regarding RA/TA Assistantship Opportunities - XXXXXXX",
+
+    "template": "Dear Professor {last_name},\n\nMy name is [Your Full Name], and I am a graduate student in [Your Program] at [Your University]. I am writing to inquire about any available Research Assistantship (RA) or Teaching Assistantship (TA) positions in your group.\n\nI have hands-on experience in [Your Skills], and I am eager to contribute to meaningful research while further developing my academic skills. I am particularly interested in your research work, and believe my background aligns well with your work.\n\nIf there are currently no open positions, I would welcome the opportunity to contribute to an ongoing project on a volunteer basis so you can evaluate my skills and determine whether I might be a good fit for a future assistantship role.\n\nI have attached my resume for your reference and would be happy to discuss any openings at your convenience.\n\nThank you for your time and consideration.\n\nBest regards,\n[Your Full Name]\n[Your Program] | [Your University]\n[Your Email]",
+
+    "daily_min": 30,
+    "daily_max": 40,
+
+    "delay_min": 10,
+    "delay_max": 30,
+
+    "send_time": "09:00"
+}

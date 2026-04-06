@@ -1,0 +1,21 @@
+# NEVER commit real config — it contains your email password
+config.json
+
+# Excel with professor data and sent status
+professors.xlsx
+
+# Resume
+*.pdf
+
+# Logs
+email_log.txt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Anaconda / venv
+.env
+env/
+venv/
