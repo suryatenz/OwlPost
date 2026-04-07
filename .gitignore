@@ -9,6 +9,7 @@ professors.xlsx
 
 # Logs
 email_log.txt
+last_run.txt
 
 # Python cache
 __pycache__/

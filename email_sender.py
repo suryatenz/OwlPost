@@ -17,8 +17,9 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
-LOG_FILE    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "email_log.txt")
+CONFIG_FILE   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+LOG_FILE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "email_log.txt")
+LAST_RUN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_run.txt")
 
 # SMTP profiles — pick one via "email_provider" in config.json
 SMTP_PROFILES = {
@@ -34,6 +35,18 @@ SMTP_PROFILES = {
 
 
 # ── helpers ────────────────────────────────────────────────────────────────
+
+def already_ran_today():
+    """Return True if the script already sent emails today."""
+    if not os.path.exists(LAST_RUN_FILE):
+        return False
+    with open(LAST_RUN_FILE, "r") as f:
+        return f.read().strip() == datetime.now().strftime("%Y-%m-%d")
+
+def mark_ran_today():
+    """Save today's date so we don't run twice in one day."""
+    with open(LAST_RUN_FILE, "w") as f:
+        f.write(datetime.now().strftime("%Y-%m-%d"))
 
 def load_config():
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -96,6 +109,11 @@ def build_message(sender, to_email, subject, body, resume_path):
 # ── core ───────────────────────────────────────────────────────────────────
 
 def send_emails():
+    # ── guard: don't run twice in one day ──
+    if already_ran_today():
+        log("Already ran today. Skipping. Will run again tomorrow.")
+        return
+
     config = load_config()
 
     # ── validate config ──
@@ -207,6 +225,7 @@ def send_emails():
             log(f"  FAILED -> {prof_name} <{prof_email}>: {e}")
 
     server.quit()
+    mark_ran_today()
     log(f"Done. {sent_count}/{len(batch)} emails sent today.")
 
     # ── daily report ──────────────────────────────────────────────────────
