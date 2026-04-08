@@ -172,6 +172,13 @@ python setup_scheduler.py
 
 This registers a task that runs `email_sender.py` every day at the time set in `send_time` in your `config.json` (default 9:00 AM).
 
+**Or use the included XML file directly (recommended):**
+```
+schtasks /create /tn ProfessorEmailSender /xml task.xml
+```
+> Before running, open `task.xml` in Notepad and replace `REGAL\spraj` with your own PC name and Windows username.
+> To find your PC name and username: open Command Prompt and type `whoami` — it shows `PCNAME\username`.
+
 To verify the task was created:
 1. Search **Task Scheduler** in the Start menu and open it
 2. In the left panel click **Task Scheduler Library**
@@ -210,6 +217,15 @@ Check your Gmail inbox — you should receive a daily report email listing every
 4. After the batch, sends you a report email
 5. When ALL professors in the sheet have been sent → automatically clears `Sent` and starts over from the top (professors with `Stop = Yes` are permanently skipped)
 
+### What happens if your PC is off at 9 AM?
+
+No emails are lost. The tool handles this automatically:
+
+- **PC was sleeping at 9 AM** → Windows wakes it and runs the task at 9 AM as normal
+- **PC was fully off at 9 AM** → The moment you turn your PC on and log in, the task waits **2 minutes** for your internet to connect, then runs immediately
+- **Already ran today?** → The script checks `last_run.txt` before doing anything. If it already sent emails today it skips and waits until tomorrow — so you will never get duplicate emails sent twice in one day
+- **Counter resets at midnight** → `last_run.txt` stores today's date. After midnight it's a new day, so the next run will go through normally
+
 ---
 
 ## Useful Commands
@@ -218,8 +234,17 @@ Check your Gmail inbox — you should receive a daily report email listing every
 # Run manually right now
 python email_sender.py
 
-# Check if the scheduled task exists
-schtasks /query /tn ProfessorEmailSender
+# Check full task status — shows Next Run Time, Last Run Time, Status
+schtasks /query /tn ProfessorEmailSender /fo LIST
+
+# Quick status check
+schtasks /query /tn ProfessorEmailSender /fo LIST | findstr "Status Next Last"
+
+# Check what emails were sent and when (last 20 lines)
+powershell -Command "Get-Content email_log.txt -Tail 20"
+
+# Check if it already ran today
+type last_run.txt
 
 # Pause automatic sending
 schtasks /change /tn ProfessorEmailSender /disable
@@ -230,6 +255,16 @@ schtasks /change /tn ProfessorEmailSender /enable
 # Remove the scheduled task completely
 schtasks /delete /tn ProfessorEmailSender /f
 ```
+
+### How to read the status
+
+| Status | What it means |
+|---|---|
+| `Ready` | Task is active and waiting for next scheduled time |
+| `Running` | Emails are being sent right now |
+| `Disabled` | Task is paused — won't run until you enable it |
+| `Next Run Time` | When it will run next (tomorrow 9 AM) |
+| `Last Run Time` | When it last ran successfully |
 
 ---
 
@@ -248,7 +283,13 @@ Make sure your PDF is in the project folder and the filename matches `resume_pat
 All professors may already be marked `Sent`. Either add more rows or delete the contents of the `Sent` column to reset manually.
 
 **Task Scheduler ran but nothing happened**
-Make sure your PC was on and connected to the internet at the scheduled time. If it was asleep, the task will run the next time you turn the PC on.
+Check `last_run.txt` — if it contains today's date, the script already ran earlier and skipped to prevent duplicates. Check `email_log.txt` to see the full history.
+
+**PC was off at 9 AM and emails didn't send when I turned it on**
+Make sure the task has a LogonTrigger set. Re-run `schtasks /create /tn ProfessorEmailSender /xml task.xml` after updating your username in `task.xml`.
+
+**"Already ran today. Skipping."**
+This is normal — it means the script ran once already today. It will run again tomorrow automatically. If you want to force a re-run today, delete `last_run.txt` and run `python email_sender.py` manually.
 
 ---
 
@@ -260,8 +301,11 @@ Make sure your PC was on and connected to the internet at the scheduled time. If
 | `clean_faculty.py` | Cleans a raw university faculty export into a usable professor list |
 | `create_excel_template.py` | Generates a blank `professors.xlsx` with the correct columns |
 | `setup_scheduler.py` | Registers the Windows Task Scheduler job for automatic daily sending |
+| `task.xml` | Task Scheduler config — includes 9 AM daily + startup trigger with 2 min delay |
 | `config.example.json` | Safe template — copy to `config.json` and fill in your details |
 | `requirements.txt` | Python dependencies (`pip install -r requirements.txt`) |
+| `last_run.txt` | Auto-generated — stores today's date to prevent duplicate sends |
+| `email_log.txt` | Auto-generated — full history of every email sent |
 
 ---
 
