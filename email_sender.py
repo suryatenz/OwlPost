@@ -114,6 +114,10 @@ def send_emails():
         log("Already ran today. Skipping. Will run again tomorrow.")
         return
 
+    # ── auto check for replies first ──
+    from reply_checker import check_replies
+    check_replies()
+
     config = load_config()
 
     # ── validate config ──
