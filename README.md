@@ -1,6 +1,6 @@
-# Professor Email Sender
+# OwlPost
 
-An automated tool that sends personalized RA/TA assistantship inquiry emails to university professors every day. You give it an Excel sheet of professors, it emails them 30–40 per day via your Gmail, marks who was contacted, skips anyone who replied, and sends you a daily report — all on autopilot.
+An automated tool that sends personalized RA/TA assistantship inquiry emails to university professors every day. You give it an Excel sheet of professors, it emails them 30–40 per day via your Gmail, marks who was contacted, automatically detects replies and skips those professors, and sends you a daily report — all on autopilot.
 
 ---
 
@@ -10,9 +10,13 @@ An automated tool that sends personalized RA/TA assistantship inquiry emails to 
 - Sends 30–40 personalized emails per day automatically at 9 AM
 - Attaches your resume to every email
 - Marks each professor as `Sent` in the spreadsheet right after emailing
-- Skips any professor you mark as `Stop` (when they reply to you)
+- **Auto-detects replies** from professors and marks `Stop = Yes` automatically — no manual work
+- Handles professors who reply from different emails or department aliases (e.g. `dept@central.uh.edu`)
+- Skips any professor marked `Stop = Yes` permanently
 - When the full list is done, automatically resets and starts the next cycle
 - Sends you a daily report email listing every professor contacted that day
+- If PC is off at 9 AM — runs automatically 2 minutes after you log in
+- Never sends twice in the same day — built-in duplicate protection
 - Runs via Windows Task Scheduler — no manual work after setup
 
 ---
@@ -205,7 +209,7 @@ Check your Gmail inbox — you should receive a daily report email listing every
 | `Email` | You | Professor's email address |
 | `Department` | You | Their department |
 | `Sent` | Script (automatic) | Set to `Yes` after email is sent — do not edit |
-| `Stop` | You | Put `Yes` here if a professor replies — they will never be emailed again |
+| `Stop` | You or the script | Put `Yes` here if a professor replies — OR let `reply_checker.py` do it automatically |
 
 ---
 
@@ -216,6 +220,27 @@ Check your Gmail inbox — you should receive a daily report email listing every
 3. Marks them `Sent = Yes` in the spreadsheet
 4. After the batch, sends you a report email
 5. When ALL professors in the sheet have been sent → automatically clears `Sent` and starts over from the top (professors with `Stop = Yes` are permanently skipped)
+
+### How reply detection works
+
+Before sending each daily batch, the script automatically scans your Gmail inbox for replies from professors and marks them `Stop = Yes` in the spreadsheet so they are never emailed again.
+
+It matches professors using 3 methods so no reply slips through:
+
+| Method | Example |
+|---|---|
+| **Exact email match** | `mkidd@uh.edu` matches `mkidd@uh.edu` |
+| **Username match** | `mkidd@central.uh.edu` matches `mkidd@uh.edu` (different domain) |
+| **Name match** | `"Capuano, Regina M" <geos2j@central.uh.edu>` matched by name when alias is unrecognizable |
+
+To manually scan your full inbox for replies at any time:
+```
+# Scan recent emails (since April 1)
+python reply_checker.py
+
+# Scan your entire inbox history
+python reply_checker.py --all
+```
 
 ### What happens if your PC is off at 9 AM?
 
@@ -231,8 +256,14 @@ No emails are lost. The tool handles this automatically:
 ## Useful Commands
 
 ```bash
-# Run manually right now
+# Run manually right now (also checks replies before sending)
 python email_sender.py
+
+# Check for replies only (no emails sent)
+python reply_checker.py
+
+# Check for replies — scan entire inbox history
+python reply_checker.py --all
 
 # Check full task status — shows Next Run Time, Last Run Time, Status
 schtasks /query /tn ProfessorEmailSender /fo LIST
@@ -282,6 +313,9 @@ Make sure your PDF is in the project folder and the filename matches `resume_pat
 **Script ran but no emails sent**
 All professors may already be marked `Sent`. Either add more rows or delete the contents of the `Sent` column to reset manually.
 
+**Professor replied but not marked Stop automatically**
+Run `python reply_checker.py --all` to scan your full inbox. This handles professors who reply from department aliases or different email addresses using name matching.
+
 **Task Scheduler ran but nothing happened**
 Check `last_run.txt` — if it contains today's date, the script already ran earlier and skipped to prevent duplicates. Check `email_log.txt` to see the full history.
 
@@ -297,15 +331,16 @@ This is normal — it means the script ran once already today. It will run again
 
 | File | Purpose |
 |---|---|
-| `email_sender.py` | Main script — reads Excel, sends emails, writes log, sends daily report |
+| `email_sender.py` | Main script — checks replies, sends emails, writes log, sends daily report |
+| `reply_checker.py` | Scans Gmail inbox for professor replies and marks Stop = Yes automatically |
 | `clean_faculty.py` | Cleans a raw university faculty export into a usable professor list |
 | `create_excel_template.py` | Generates a blank `professors.xlsx` with the correct columns |
 | `setup_scheduler.py` | Registers the Windows Task Scheduler job for automatic daily sending |
-| `task.xml` | Task Scheduler config — includes 9 AM daily + startup trigger with 2 min delay |
+| `task.xml` | Task Scheduler config — includes 9 AM daily + logon trigger with 2 min delay |
 | `config.example.json` | Safe template — copy to `config.json` and fill in your details |
 | `requirements.txt` | Python dependencies (`pip install -r requirements.txt`) |
 | `last_run.txt` | Auto-generated — stores today's date to prevent duplicate sends |
-| `email_log.txt` | Auto-generated — full history of every email sent |
+| `email_log.txt` | Auto-generated — full history of every email sent and reply detected |
 
 ---
 
