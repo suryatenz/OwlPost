@@ -75,11 +75,16 @@ def check_replies():
         log(f"reply_checker: Could not connect to Gmail IMAP — {e}")
         return
 
-    # Search only emails received after the first email was sent (last 90 days)
-    _, msg_ids = mail.search(None, 'SINCE "01-Apr-2026"')
+    # Search emails since April 1 2026 (when sending started)
+    # To do a full inbox scan run: python reply_checker.py --all
+    import sys
+    if "--all" in sys.argv:
+        _, msg_ids = mail.search(None, "ALL")
+    else:
+        _, msg_ids = mail.search(None, 'SINCE "01-Apr-2026"')
     all_ids = msg_ids[0].split()
 
-    log(f"reply_checker: Scanning {len(all_ids)} recent emails in inbox...")
+    log(f"reply_checker: Scanning {len(all_ids)} emails in inbox...")
 
     marked_count = 0
     already_stopped = 0
