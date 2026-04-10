@@ -53,18 +53,33 @@ def check_replies():
     ws  = wb.active
     col = get_column_map(ws)
 
-    # Build a map of professor email (lowercase) -> row
-    prof_rows = {}
+    # Build lookup maps:
+    # 1. full email (lowercase)  -> row   e.g. "mkidd@uh.edu"
+    # 2. username only           -> row   e.g. "mkidd"  (handles @Central.UH.EDU aliases)
+    # 3. normalized full name    -> row   e.g. "reginamdcapuano" (handles dept aliases)
+    prof_by_email    = {}
+    prof_by_username = {}
+    prof_by_name     = {}
+
+    import re
+    def normalize_name(name):
+        return re.sub(r'[^a-z]', '', name.lower())
+
     for row in ws.iter_rows(min_row=2):
         email_val = row[col["Email"]].value
+        name_val  = row[col["Professor Name"]].value
         if email_val:
-            prof_rows[str(email_val).strip().lower()] = row
+            full = str(email_val).strip().lower()
+            prof_by_email[full] = row
+            prof_by_username[full.split("@")[0]] = row
+        if name_val:
+            prof_by_name[normalize_name(str(name_val))] = row
 
-    if not prof_rows:
+    if not prof_by_email:
         log("reply_checker: No professors found in spreadsheet.")
         return
 
-    log(f"reply_checker: Checking Gmail inbox for replies from {len(prof_rows)} professors...")
+    log(f"reply_checker: Checking Gmail inbox for replies from {len(prof_by_email)} professors...")
 
     # ── connect to Gmail IMAP ─────────────────────────────────────────────
     try:
@@ -104,8 +119,26 @@ def check_replies():
             else:
                 sender_email = from_header.strip().lower()
 
-            if sender_email in prof_rows:
-                row = prof_rows[sender_email]
+            # Match 1: full email  e.g. mkidd@uh.edu
+            # Match 2: username   e.g. mkidd (handles @Central.UH.EDU vs @uh.edu)
+            # Match 3: name       e.g. "Capuano, Regina M" -> normalize and lookup
+            sender_username = sender_email.split("@")[0]
+
+            # Extract display name from "LastName, FirstName <email>"
+            # Rearrange "Last, First M" -> "First M Last" to match spreadsheet format
+            sender_name_norm = ""
+            if "<" in from_header:
+                display = from_header.split("<")[0].strip().strip('"')
+                if "," in display:
+                    parts = display.split(",", 1)
+                    display = parts[1].strip() + " " + parts[0].strip()
+                sender_name_norm = normalize_name(display)
+
+            row = (prof_by_email.get(sender_email)
+                   or prof_by_username.get(sender_username)
+                   or (prof_by_name.get(sender_name_norm) if sender_name_norm else None))
+
+            if row:
                 prof_name = str(row[col["Professor Name"]].value or "").strip()
 
                 # Already stopped?
