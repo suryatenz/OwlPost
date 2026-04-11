@@ -275,6 +275,22 @@ This is normal. It means the script already sent emails today. It will run again
 
 `config.json` is listed in `.gitignore` and will never be uploaded to GitHub since it contains your password. `professors.xlsx` is also excluded because it contains personal email addresses. Never share your `config.json` or App Password with anyone. You can revoke your Gmail App Password at any time from Google Account, Security, App passwords.
 
+## What Access Does OwlPost Have to Your Google Account
+
+OwlPost only uses the Gmail App Password you provide in `config.json`. Here is exactly what it can and cannot do.
+
+What it can do:
+- Send emails from your Gmail address via SMTP (outgoing mail)
+- Read your Gmail inbox via IMAP to detect replies from professors
+
+What it cannot do:
+- Access any other Google service like Drive, Docs, Calendar or Photos
+- Read emails from any other Gmail account
+- Delete, move or modify any of your emails
+- Access your Google account settings, contacts, passwords or payment info
+
+To revoke access at any time, go to Google Account, then Security, then App passwords, and delete the entry you created for OwlPost. That immediately cuts off all access and the tool will stop working until a new App Password is created.
+
 ## License
 
 MIT License, free to use, modify, and share.
