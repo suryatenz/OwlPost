@@ -146,11 +146,14 @@ Check your Gmail inbox and you should receive a daily report email listing every
 
 | Column | Who fills it | What it means |
 |---|---|---|
-| Professor Name | You | Full name of the professor |
-| Email | You | Their email address |
-| Department | You | Their department |
+| Professor Name | You / scraper | Full name of the professor |
+| Email | You / scraper | Their email address |
+| Department | You / scraper | Their department |
+| AcadGroup | You / scraper | Academic group or college (e.g. Cullen Engineering, NSM) |
+| Rank | You / scraper | Role if known: Dean, Chair, or blank for regular faculty |
 | Sent | Script (automatic) | Set to Yes after email is sent, do not edit this |
 | Stop | You or the script | Put Yes here when a professor replies, or let reply_checker.py do it automatically |
+| Replied | update_replies.py | Reply status with notes: green = interested, yellow = no openings, red = bounced |
 
 ## How the Daily Cycle Works
 
@@ -180,11 +183,74 @@ To scan your entire inbox history including older emails:
 python reply_checker.py --all
 ```
 
+For a full reply processing run (marks positive/negative, deletes left-institution professors, adds referred contacts, flags bounces, color-codes the Replied column):
+```
+python update_replies.py
+```
+
+update_replies.py is designed to be edited each time you process a new batch of replies. Open it and add each reply to POSITIVE_REPLIES or NEGATIVE_REPLIES before running. Positive replies get a green Replied cell with no Stop. Negative replies get a yellow cell and Stop = Yes. Bounced addresses get a red cell and Stop = Yes.
+
 ### What Happens if Your PC is Off at 9 AM
 
 No emails are lost. If your PC was sleeping at 9 AM, Windows wakes it and runs the task as normal. If your PC was fully off, the moment you turn it on and log in, the task waits 2 minutes for your internet to connect and then runs immediately.
 
 The script checks a file called `last_run.txt` before doing anything. If it already sent emails today it skips and waits until tomorrow so you will never get duplicate sends. The counter resets automatically at midnight because the script compares today's date. After midnight it is a new day and the next run goes through normally.
+
+## Building Your Professor List from Scratch
+
+If you want to scrape your university's faculty pages instead of entering professors manually, OwlPost includes a full scraping pipeline.
+
+### Step 1. Scrape faculty pages
+
+```
+python scrape_faculty.py
+```
+
+This scrapes all department faculty pages (both static HTML and JavaScript-rendered Drupal pages using Selenium headless Chrome) and builds professors.xlsx. It handles UH-style Drupal pages automatically using multiple name extraction strategies.
+
+```
+python scan_edu.py
+```
+
+Run this after scrape_faculty.py to pick up any additional departments that were missed on the first pass.
+
+### Step 2. Add deans and department chairs
+
+```
+python add_leaders.py
+```
+
+Scrapes the administration and leadership pages of every college already represented in professors.xlsx and adds any deans, associate deans, directors, and chairs not yet in the spreadsheet.
+
+```
+python add_deans.py
+```
+
+Adds a hardcoded list of college deans and department chairs with their known emails and Rank = Dean or Chair. Run this after add_leaders.py to fill in anyone the scraper missed.
+
+### Step 3. Fix garbled names
+
+```
+python fix_names.py
+```
+
+After scraping, some names come out garbled as "Office: Room 123" or as an email address. This script re-scrapes the same faculty pages with smarter name extraction and fixes every bad row. For any name it still cannot find, it derives a placeholder from the email username (for example jsmith3 becomes J Smith).
+
+### Step 4. Remove retired or left-institution professors
+
+```
+python cleanup_replies.py
+```
+
+Removes specific professors who are retired, have left the university, or whose emails bounced during scraping. Edit the lists at the top of this file before running.
+
+### Step 5. Process replies
+
+```
+python update_replies.py
+```
+
+After receiving professor replies, open update_replies.py and add each reply to the appropriate dict (POSITIVE_REPLIES, NEGATIVE_REPLIES, BOUNCE_EMAILS, or NEW_CONTACTS for referrals). Then run it and it will color-code the Replied column and set Stop = Yes for anyone who declined.
 
 ## Useful Commands
 
@@ -258,11 +324,11 @@ This is normal. It means the script already sent emails today. It will run again
 
 ## Project Files
 
+### Core sending pipeline
 | File | Purpose |
 |---|---|
 | email_sender.py | Main script that checks for replies, sends emails, writes the log, and sends the daily report |
 | reply_checker.py | Scans your Gmail inbox for professor replies and marks Stop = Yes automatically |
-| clean_faculty.py | Cleans a raw university faculty export into a usable professor list |
 | create_excel_template.py | Generates a blank professors.xlsx with the correct columns |
 | setup_scheduler.py | Registers the Windows Task Scheduler job for automatic daily sending |
 | task.xml | Task Scheduler config with 9 AM daily trigger and a logon trigger with 2 minute delay |
@@ -270,6 +336,18 @@ This is normal. It means the script already sent emails today. It will run again
 | requirements.txt | Python dependencies, install with pip install -r requirements.txt |
 | last_run.txt | Auto-generated file that stores today's date to prevent duplicate sends |
 | email_log.txt | Auto-generated log with the full history of every email sent and every reply detected |
+
+### List building and maintenance
+| File | Purpose |
+|---|---|
+| scrape_faculty.py | Scrapes all department faculty pages (static + Selenium) to build professors.xlsx from scratch |
+| scan_edu.py | Supplemental scraper to pick up departments missed in the first pass |
+| add_leaders.py | Scrapes college administration pages and adds deans, directors, and chairs |
+| add_deans.py | Hardcoded list of college deans and dept chairs with known emails and Rank labels |
+| fix_names.py | Re-scrapes faculty pages to fix garbled names from prior scraping |
+| cleanup_replies.py | Removes retired, left-institution, and bounced professors from professors.xlsx |
+| update_replies.py | Processes all Gmail replies: marks positive/negative, deletes left-institution, adds referrals, flags bounces |
+| clean_faculty.py | Cleans a raw university faculty export into a usable professor list |
 
 ## Security Notes
 
