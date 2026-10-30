@@ -20,3 +20,15 @@ __pycache__/
 .env
 env/
 venv/
+
+# Node (not needed in this project)
+node_modules/
+package-lock.json
+
+# Excel lock files
+~$*.xlsx
+
+# Temp/one-off scripts
+professors_tmp.xlsx
+drafts/
+.claude/

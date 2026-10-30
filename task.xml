@@ -36,9 +36,9 @@
   </Triggers>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\Users\spraj\anaconda3\python.exe</Command>
-      <Arguments>C:\Users\spraj\professor-emailer\email_sender.py</Arguments>
-      <WorkingDirectory>C:\Users\spraj\professor-emailer</WorkingDirectory>
+      <Command>C:\Users\spraj\AppData\Local\Programs\Python\Python311\python.exe</Command>
+      <Arguments>D:\SURYA\01_Code\Automation\professor-emailer\email_sender.py</Arguments>
+      <WorkingDirectory>D:\SURYA\01_Code\Automation\professor-emailer</WorkingDirectory>
     </Exec>
   </Actions>
 </Task>

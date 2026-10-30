@@ -20,7 +20,7 @@ def main():
         config = json.load(f)
 
     send_time   = config.get("send_time", "09:00")
-    python_exe  = r"C:\Users\spraj\anaconda3\python.exe"
+    python_exe  = r"C:\Users\spraj\AppData\Local\Programs\Python\Python311\python.exe"
 
     print(f"Python   : {python_exe}")
     print(f"Script   : {SENDER}")

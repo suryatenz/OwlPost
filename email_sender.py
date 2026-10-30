@@ -143,7 +143,11 @@ def send_emails():
         resume_path = None
 
     # ── load spreadsheet ──
-    wb  = openpyxl.load_workbook(excel_path)
+    try:
+        wb  = openpyxl.load_workbook(excel_path)
+    except Exception as e:
+        log(f"ERROR: Cannot open Excel ({e}). Close Excel and rerun.")
+        return
     ws  = wb.active
     col = get_column_map(ws)
 
@@ -234,6 +238,13 @@ def send_emails():
 
     # ── daily report ──────────────────────────────────────────────────────
     send_daily_report(sender_email, sender_password, sent_log, failed_count, config)
+
+    # ── inbox cleanup (bounces + promos + junk) ───────────────────────────
+    try:
+        from cleanup_inbox import clean_inbox
+        clean_inbox(config)
+    except Exception as e:
+        log(f"WARNING: Inbox cleanup failed — {e}")
 
 
 def send_daily_report(sender_email, sender_password, sent_log, failed_count, config):

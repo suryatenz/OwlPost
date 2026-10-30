@@ -49,7 +49,11 @@ def check_replies():
         return
 
     # ── load spreadsheet ──────────────────────────────────────────────────
-    wb  = openpyxl.load_workbook(excel_path)
+    try:
+        wb  = openpyxl.load_workbook(excel_path)
+    except Exception as e:
+        log(f"reply_checker: Cannot open Excel ({e}) — skipping reply check. Close Excel and rerun.")
+        return
     ws  = wb.active
     col = get_column_map(ws)
 
@@ -106,7 +110,7 @@ def check_replies():
 
     for msg_id in all_ids:
         try:
-            _, msg_data = mail.fetch(msg_id, "(RFC822)")
+            _, msg_data = mail.fetch(msg_id, "(BODY.PEEK[HEADER.FIELDS (FROM)])")
             raw = msg_data[0][1]
             msg = email.message_from_bytes(raw)
 

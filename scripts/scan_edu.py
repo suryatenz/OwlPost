@@ -1,6 +1,6 @@
 import imaplib, email, json
 
-config = json.load(open(r'C:\Users\spraj\professor-emailer\config.json'))
+config = json.load(open(r'D:\SURYA\01_Code\Automation\professor-emailer\config.json'))
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
 mail.login(config['sender_email'], config['sender_app_password'])
 
